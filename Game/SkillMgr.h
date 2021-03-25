@@ -102,6 +102,7 @@ struct skill_special
 	DECLARE_PROPERTY_STRING(Name);
 	DECLARE(uint8,target);
 	DECLARE(int32,scope_type);
+	DECLARE(uint16, scope_angle);
 	DECLARE(uint8,scope_value);
 	DECLARE(int32,element[MONSTER_SKILL_ELEMENT_MAX]);
 	DECLARE_ARRAY_STRUCT_PTR(skill_special_element const, Element, MONSTER_SKILL_ELEMENT_MAX); 

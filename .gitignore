@@ -11,3 +11,10 @@ Libraries/Common.lib
 *.pch
 *.map
 *.exe
+/.vs/slnx.sqlite
+/.vs
+/Common/Release
+/ConnectServer/Release
+/Game/Release
+/LoginServer/Release
+/Server_Link/Release

@@ -592,6 +592,7 @@ enum SkillSpecialScope
 	SKILL_SCOPE_AREA = 1,
 	SKILL_SCOPE_TARGET_RANGE = 2,
 	SKILL_SCOPE_TARGET_CHAIN = 3,
+	SKILL_SCOPE_TYPE_ANGLE = 4
 };
 
 enum SkillSpecialTarget

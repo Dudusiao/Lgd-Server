@@ -18,6 +18,7 @@
 #ifndef __SOCKET_H__
 #define __SOCKET_H__
 
+#include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/asio/read.hpp>

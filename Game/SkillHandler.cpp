@@ -6952,6 +6952,11 @@ void SpecialSkillHandler::RunTarget()
 			{
 
 			}
+			else if (this->GetSkillInfo()->scope_type == SKILL_SCOPE_TYPE_ANGLE)
+			{
+				//float scope_angle = 
+				//this->GetCaster()->SkillAngleCalculate(angle, tan((fScopeAngle * Q_PI / 180.0) * lpMonsterSkillUnit->m_iUnitScopeValue), 
+			}
 
 			if ( enable_attack )
 			{
