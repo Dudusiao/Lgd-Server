@@ -79,15 +79,25 @@ void Unit::SkillAngleCalculate(float angle, float tx, float ty, float sx, float 
 	}*/
 }
 
-bool Unit::SkillInAngle(int16 x, int16 y)
+bool Unit::SkillInAngle(int16 x, int16 y, bool scope_angle_check)
 {
 	uint8 j = 3;
 
-	for ( uint8 i = 0; i < MAX_ARRAY_FRUSTRUM; j = i, i++ )
+	for (uint8 i = 0; i < MAX_ARRAY_FRUSTRUM; j = i, i++)
 	{
-		if ( (this->GetSkillAngleX(i) - x) * (this->GetSkillAngleY(j) - y) -
-			 (this->GetSkillAngleX(j) - x) * (this->GetSkillAngleY(i) - y) < 0 )
-			 return false;
+		if (scope_angle_check)
+		{
+			if ((this->GetSkillAngleX(i) - x) * (this->GetSkillAngleY(j) - y) -
+				(this->GetSkillAngleX(j) - x) * (this->GetSkillAngleY(i) - y) < -0.5)
+				return false;
+		}
+
+		else
+		{
+			if ((this->GetSkillAngleX(i) - x) * (this->GetSkillAngleY(j) - y) -
+				(this->GetSkillAngleX(j) - x) * (this->GetSkillAngleY(i) - y) < 0)
+				return false;
+		}
 	}
 
 	return true;

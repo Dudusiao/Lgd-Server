@@ -305,12 +305,13 @@ void SkillMgr::LoadSkillSpecial()
 			add_skill->SetName(fields[1].GetString());
 			add_skill->target.set(fields[2].GetUInt8());
 			add_skill->scope_type.set(fields[3].GetInt32());
-			add_skill->scope_value.set(fields[4].GetUInt8());
+			add_skill->scope_angle.set(fields[4].GetInt16());
+			add_skill->scope_value.set(fields[5].GetUInt8());
 
 			for ( uint8 i = 0; i < MONSTER_SKILL_ELEMENT_MAX; i++ )
 			{
-				add_skill->element[i].set(fields[5+i].GetInt32());
-				add_skill->SetElement(i, this->GetSkillSpecialElement(fields[5+i].GetInt32()));
+				add_skill->element[i].set(fields[6+i].GetInt32());
+				add_skill->SetElement(i, this->GetSkillSpecialElement(fields[6+i].GetInt32()));
 			}
 
 			this->skill_special_map[add_skill->guid.get()] = add_skill;

@@ -507,7 +507,7 @@ class Unit: public Object
 		int32 GetMajesticSpecialDamage(int32 t_defense, uint16 & damage_type, Skill const* mSkill, Unit* pTarget);
 		
 		void SkillAngleCalculate(float angle, float tx, float ty, float sx, float sy, bool convert = true, int32 add_x = -1, int32 add_y = -1);
-		bool SkillInAngle(int16 x, int16 y);
+		bool SkillInAngle(int16 x, int16 y, bool scope_angle_check = false);
 		int32 GetAngle(int16 x, int16 y);
 
 		virtual void GetPartyMembers(Unit* mMember[MAX_PARTY_MEMBERS], uint8 & count, uint8 distance);
