@@ -1351,6 +1351,14 @@ bool AllowItemDropInWorld(uint16 world, Item const& item)
 		}
 	}
 
+	if (item.IsSocket())
+	{
+		if (world != WORLD_RAKLION && world != WORLD_RAKLION_BOSS)
+		{
+			return false;
+		}
+	}
+
 	bool fail = false;
 
 	if ( DS_MAP_RANGE(world) )
