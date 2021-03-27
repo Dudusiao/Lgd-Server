@@ -130,7 +130,7 @@ class FormulaMgr
 		virtual ~FormulaMgr();
 
 		void Load();
-		float GetValue(uint8 type, uint16 id, int32 variable);
+		float GetValue(uint8 type, uint16 id, ...);
 		float GetOrCreateValue(uint8 type, uint16 id, int32 variable);
 	private:
 		FormulaList m_FormulaList;

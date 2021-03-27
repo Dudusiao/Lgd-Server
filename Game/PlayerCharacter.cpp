@@ -6969,6 +6969,107 @@ void Player::GiveSingleExperience(Monster * mMonster, int32 damage)
 	this->GiveExperience(experience, false, true, 1);
 }
 
+void Player::GiveSingleExperienceFormula(Monster* mMonster, int32 damage)
+{
+	if (sGameServer->GetTimeCheckLevelMax() != -1 && this->GetTotalLevel() > sGameServer->GetTimeCheckLevelMax())
+	{
+		this->SendNotice(CUSTOM_MESSAGE_ID_RED, "You can't get more experience on this server.");
+		return;
+	}
+
+	World* pWorld = this->GetWorld();
+
+	if (!pWorld)
+		return;
+
+	if (!pWorld->flagHas(WORLD_FLAG_NO_LEVEL_CHECK))
+	{
+		if (this->IsMajestic() && mMonster->GetLevel() < sGameServer->GetMinMonsterLevelMajestic())
+		{
+			return;
+		}
+
+		if (this->IsMaster() && mMonster->GetLevel() < sGameServer->GetMinMonsterLevelMaster())
+		{
+			return;
+		}
+	}
+
+	this->UpdateGoblinPoints(mMonster);
+
+	int64 experience = 0;
+
+	if (this->GetTotalLevel() <= mMonster->GetMonsterTemplate()->ExpLevel)
+		experience = sFormulaMgr->GetValue(0, 0, this->GetTotalLevel(), this->GetTotalLevel(), mMonster->GetMonsterTemplate()->ExpLevel, this->GetTotalLevel());
+	else
+		experience = sFormulaMgr->GetValue(0, 1, mMonster->GetMonsterTemplate()->ExpLevel, this->GetTotalLevel(), mMonster->GetMonsterTemplate()->ExpLevel, this->GetTotalLevel());
+
+	if (experience < 0)
+		experience = 1;
+
+	if (damage > mMonster->PowerGetTotal(POWER_LIFE))
+		damage = mMonster->PowerGetTotal(POWER_LIFE);
+
+	experience = sFormulaMgr->GetValue(0, 3, (uint32)experience, damage, mMonster->PowerGetTotal(POWER_LIFE));
+
+	int32 m_zen = 0;
+
+	if (this->IsMajestic())
+	{
+		m_zen = experience * sGameServer->GetMajesticZen() / 100;
+	}
+	else if (this->IsMaster())
+	{
+		m_zen = experience * sGameServer->GetMasterZen() / 100;
+	}
+	else
+	{
+		m_zen = experience * sGameServer->GetNormalZen() / 100;
+	}
+
+	m_zen = m_zen * pWorld->GetZenRate() / 100;
+
+	if (m_zen < 0)
+		m_zen = 0;
+
+	mMonster->IncreaseZen(m_zen);
+
+	CharacterExperienceTable const* pCharacterExperienceTable = sCharacterBase->GetCharacterExperienceTable(this);
+
+	if (pCharacterExperienceTable)
+	{
+		experience *= pCharacterExperienceTable->GetExperienceRate();
+	}
+	else
+	{
+		if (this->IsMajestic())
+		{
+			experience *= sGameServer->GetMajesticExperience();
+		}
+		else if (this->IsMaster())
+		{
+			experience *= sGameServer->GetMasterExperience();
+		}
+		else
+		{
+			experience *= sGameServer->GetNormalExperience();
+		}
+	}
+
+	experience = experience * pWorld->GetExperienceRate() / 100;
+
+	if (sCrywolf->GetOccupationState() == CRYWOLF_OCCUPATION_FAIL && sGameServer->IsCrywolfPenaltyApply())
+	{
+		experience = experience * sGameServer->GetCrywolfPenaltyExperienceGain() / 100;
+	}
+
+	this->ApplyBuffExperience(experience, 1);
+
+	sCharacterBase->ApplyExperienceAdjust(this, experience);
+
+	this->GiveExperience(experience, false, true, 1);
+}
+
 void Player::GivePartyExperience(Monster * mMonster, int32 damage)
 {
 	World* pWorld = this->GetWorld();
@@ -7146,6 +7247,181 @@ void Player::GivePartyExperience(Monster * mMonster, int32 damage)
 			m_zen = 0;
 
 		mMonster->IncreaseZen(m_zen);
+
+		pPlayer->GiveExperience(experience, false, true, 1);
+	}
+}
+
+void Player::GivePartyExperienceFormula(Monster* mMonster, int32 damage)
+{
+	World* pWorld = this->GetWorld();
+
+	if (!pWorld)
+		return;
+
+	bool CharacterBonus[Character::MAX_CLASS] = { false, false, false, false, false, false, false, false, false, false, false };
+	int32 total_level = 0;
+	int32 top_level = 0;
+	uint8 viewplayer = 0;
+	int32 viewpercent = 100;
+	int64 solo_exp = 0;
+
+	Party* pParty = this->GetParty();
+	Player* pPlayer = nullptr;
+
+	if (!pParty)
+		return;
+
+	for (uint8 i = 0; i < MAX_PARTY_MEMBERS; ++i)
+	{
+		if (pParty->GetMember(i)->GetStatus() != PARTY_USER_FLAG_PLAYING)
+			continue;
+
+		pPlayer = pParty->GetMember(i)->GetPlayer();
+
+		if (!pPlayer)
+			continue;
+
+		if (!this->SameDimension(pPlayer))
+			continue;
+
+		if (!IN_RANGE(this, pPlayer, MAX_PARTY_MONSTER_KILL_DISTANCE))
+			continue;
+
+		viewplayer++;
+		total_level += pPlayer->GetTotalLevel();
+		CharacterBonus[pPlayer->GetClass()] = true;
+
+		if (pPlayer->GetTotalLevel() > top_level)
+		{
+			top_level = pPlayer->GetTotalLevel();
+		}
+	}
+
+	if (!viewplayer)
+	{
+		return;
+	}
+
+	if (top_level <= mMonster->GetMonsterTemplate()->ExpLevel)
+		solo_exp = sFormulaMgr->GetValue(0, 0, top_level, top_level, mMonster->GetMonsterTemplate()->ExpLevel, top_level);
+	else
+		solo_exp = sFormulaMgr->GetValue(0, 1, mMonster->GetMonsterTemplate()->ExpLevel, top_level, mMonster->GetMonsterTemplate()->ExpLevel, top_level);
+
+	if (solo_exp < 0)
+		solo_exp = 1;
+
+	if (damage > mMonster->PowerGetTotal(POWER_LIFE))
+		damage = mMonster->PowerGetTotal(POWER_LIFE);
+
+	solo_exp = sFormulaMgr->GetValue(0, 3, (uint32)solo_exp, damage, mMonster->PowerGetTotal(POWER_LIFE));
+
+	if (sCharacterBase->IsExperienceBonus(CharacterBonus))
+	{
+		viewpercent = sGameServer->GetPartyBonusExperience(viewplayer - 1);
+	}
+	else
+	{
+		viewpercent = sGameServer->GetPartyExperience(viewplayer - 1);
+	}
+
+	int64 experience = 0;
+	int32 m_zen = 0;
+
+	for (uint8 i = 0; i < MAX_PARTY_MEMBERS; ++i)
+	{
+		if (pParty->GetMember(i)->GetStatus() != PARTY_USER_FLAG_PLAYING)
+			continue;
+
+		pPlayer = pParty->GetMember(i)->GetPlayer();
+
+		if (!pPlayer)
+			continue;
+
+		if (!this->SameDimension(pPlayer))
+			continue;
+
+		if (!IN_RANGE(this, pPlayer, MAX_PARTY_MONSTER_KILL_DISTANCE))
+			continue;
+
+		if (!pWorld->flagHas(WORLD_FLAG_NO_LEVEL_CHECK))
+		{
+			if (pPlayer->IsMajestic() && mMonster->GetLevel() < sGameServer->GetMinMonsterLevelMajestic())
+			{
+				continue;
+			}
+
+			if (pPlayer->IsMaster() && mMonster->GetLevel() < sGameServer->GetMinMonsterLevelMaster())
+			{
+				continue;
+			}
+		}
+
+		if (sGameServer->GetTimeCheckLevelMax() != -1 && pPlayer->GetTotalLevel() > sGameServer->GetTimeCheckLevelMax())
+		{
+			this->SendNotice(CUSTOM_MESSAGE_ID_RED, "You can't get more experience on this server.");
+			continue;
+		}
+
+		pPlayer->UpdateGoblinPoints(mMonster);
+
+		experience = sFormulaMgr->GetValue(0, 4, (uint32)solo_exp, (float)(viewpercent / 100.0), pPlayer->GetTotalLevel(), total_level);
+		
+		if (pPlayer == this)
+		{
+			if (pPlayer->IsMajestic())
+			{
+				m_zen = experience * sGameServer->GetMajesticZen() / 100;
+			}
+			else if (pPlayer->IsMaster())
+			{
+				m_zen = experience * sGameServer->GetMasterZen() / 100;
+			}
+			else
+			{
+				m_zen = experience * sGameServer->GetNormalZen() / 100;
+			}
+
+			m_zen = m_zen * pWorld->GetZenRate() / 100;
+
+			if (m_zen < 0)
+				m_zen = 0;
+		}
+
+		mMonster->IncreaseZen(m_zen);
+
+		CharacterExperienceTable const* pCharacterExperienceTable = sCharacterBase->GetCharacterExperienceTable(pPlayer);
+
+		if (pCharacterExperienceTable)
+		{
+			experience *= pCharacterExperienceTable->GetExperienceRate();
+		}
+		else
+		{
+			if (pPlayer->IsMajestic())
+			{
+				experience *= sGameServer->GetMajesticExperience();
+			}
+			else if (pPlayer->IsMaster())
+			{
+				experience *= sGameServer->GetMasterExperience();
+			}
+			else
+			{
+				experience *= sGameServer->GetNormalExperience();
+			}
+		}
+
+		experience = experience * pWorld->GetExperienceRate() / 100;
+
+		if (sCrywolf->GetOccupationState() == CRYWOLF_OCCUPATION_FAIL && sGameServer->IsCrywolfPenaltyApply())
+		{
+			experience = experience * sGameServer->GetCrywolfPenaltyExperienceGain() / 100;
+		}
+
+		pPlayer->ApplyBuffExperience(experience, viewplayer);
+
+		sCharacterBase->ApplyExperienceAdjust(pPlayer, experience);
 
 		pPlayer->GiveExperience(experience, false, true, 1);
 	}

@@ -53,6 +53,7 @@ struct MonsterTemplate
 	uint8 CriticalDamageResistance;
 	uint8 ExcellentDamageResistance;
 	uint8 DamageAbsrob;
+	uint16 ExpLevel;
 	bool IsElite;
 	bool IsCustom;
 };

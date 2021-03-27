@@ -121,11 +121,17 @@ void Monster::KillExperience()
 
 	if ( pParty )
 	{
-		pMaxAttacker->GivePartyExperience(this, damage_deal);
+		if (this->GetMonsterTemplate()->ExpLevel > 0)
+			pMaxAttacker->GivePartyExperienceFormula(this, damage_deal);
+		else
+			pMaxAttacker->GivePartyExperience(this, damage_deal);
 	}
 	else
 	{
-		pMaxAttacker->GiveSingleExperience(this, damage_deal);
+		if (this->GetMonsterTemplate()->ExpLevel > 0)
+			pMaxAttacker->GiveSingleExperienceFormula(this, damage_deal);
+		else
+			pMaxAttacker->GiveSingleExperience(this, damage_deal);
 	}
 }
 

@@ -134,6 +134,7 @@ void MonsterManager::LoadMonsterTemplate()
 			data.DamageAbsrob = reader.GetUInt8();
 			data.IsElite = reader.GetBool();
 			data.IsCustom = reader.GetBool();
+			data.ExpLevel = reader.GetUInt16();
 
 			if (!sScriptAI->IsScriptAI(data.ScriptName))
 			{

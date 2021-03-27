@@ -252,8 +252,12 @@ void FormulaMgr::Load()
 	sLog->outInfo(LOG_DEFAULT, " ");
 }
 
-float FormulaMgr::GetValue(uint8 type, uint16 id, int32 variable)
+float FormulaMgr::GetValue(uint8 type, uint16 id, ...)
 {
+	va_list args, args_copy;
+	va_start(args, id);
+	va_copy(args_copy, args);
+
 	for (FormulaList::const_iterator itr = this->m_FormulaList.begin(); itr != this->m_FormulaList.end(); ++itr)
 	{
 		FormulaData const* pData = *itr;
@@ -265,8 +269,13 @@ float FormulaMgr::GetValue(uint8 type, uint16 id, int32 variable)
 
 		if (pData->GetType() == type && pData->GetID() == id)
 		{
-			std::string formula = pData->GetFormula();
-			Util::ReplaceString(formula, "%d", std::to_string(variable));
+			const auto sz = vsnprintf(nullptr, 0, pData->GetFormula().c_str(), args) + 1;
+
+			std::string formula(sz, ' ');
+			vsnprintf(&formula.front(), sz, pData->GetFormula().c_str(), args_copy);
+
+			va_end(args_copy);
+			va_end(args);
 
 			std::string value = ES::solve(formula, 3);
 
