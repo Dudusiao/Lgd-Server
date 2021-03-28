@@ -28,7 +28,13 @@ void MossMerchant::Load()
 
 			pData->SetID(fields[loop++].GetUInt8());
 			pData->SetName(fields[loop++].GetString());
-			pData->SetRequiredItem(fields[loop++].GetUInt16());
+
+			for (uint8 n = 0; n < MOSS_MERCHANT_REQUIRED_ITEM_MAX; n++)
+			{
+				pData->SetRequiredItemType(n, fields[loop++].GetUInt16());
+				pData->SetRequiredItemCount(n, fields[loop++].GetUInt32());
+			}
+
 			pData->SetRequiredZen(fields[loop++].GetUInt32());
 			pData->SetItemBag(fields[loop++].GetString());
 			pData->SetEnabled(fields[loop++].GetUInt8());
@@ -74,7 +80,6 @@ void MossMerchant::Open(Player* pPlayer)
 	head->h.set(0x70, 0x11, sizeof(MOSS_MERCHANT_OPEN) + head->count);
 
 	pPlayer->sendPacket(buffer, head->h.get_size());
-
 	pPlayer->MoneySend();
 }
 
@@ -112,22 +117,29 @@ void MossMerchant::OpenBox(Player* pPlayer, uint8 * Packet)
 		return;
 	}
 
-	if ( pSection->GetRequiredItem() != uint16(-1) )
+	if (pSection->GetRequiredZen())
 	{
-		int32 count = pPlayer->GetInventory()->GetItemCount(pSection->GetRequiredItem(), 0);
-
-		if ( count < pSection->GetRequiredZen() )
-		{
-			sLog->outError("moss_merchant", "%s -- Lack items %u [%u - %u]-- %s", __FUNCTION__, lpMsg->type, count, pSection->GetRequiredZen(), pPlayer->BuildLog().c_str());
-			return;
-		}
-	}
-	else
-	{
-		if ( !pPlayer->MoneyHave(pSection->GetRequiredZen()) )
+		if (!pPlayer->MoneyHave(pSection->GetRequiredZen()))
 		{
 			sLog->outError("moss_merchant", "%s -- Lack money %u [%u - %u]-- %s", __FUNCTION__, lpMsg->type, pPlayer->MoneyGet(), pSection->GetRequiredZen(), pPlayer->BuildLog().c_str());
 			return;
+		}
+	}
+
+	else
+	{
+		for (uint8 n = 0; n < MOSS_MERCHANT_REQUIRED_ITEM_MAX; ++n)
+		{
+			if (pSection->GetRequiredItemType(n) == uint16(-1))
+				continue;
+
+			int32 count = pPlayer->GetInventory()->GetItemCount(pSection->GetRequiredItemType(n), 0);
+
+			if (count < pSection->GetRequiredItemCount(n))
+			{
+				sLog->outError("moss_merchant", "%s -- Lack items %u [%u - %u]-- %s", __FUNCTION__, lpMsg->type, count, pSection->GetRequiredItemCount(n), pPlayer->BuildLog().c_str());
+				return;
+			}
 		}
 	}
 
@@ -140,16 +152,23 @@ void MossMerchant::OpenBox(Player* pPlayer, uint8 * Packet)
 
 	sLog->outInfo("moss_merchant", "%s -- %u succeed -- %s -- %s", __FUNCTION__, lpMsg->type, pPlayer->BuildLog().c_str(), item.BuildLog(0).c_str());
 
-	if ( pSection->GetRequiredItem() != uint16(-1) )
-	{
-		for ( int32 i = 0; i < pSection->GetRequiredZen(); ++i )
-		{
-			pPlayer->ItemFind(pSection->GetRequiredItem(), 0, true);
-		}
-	}
-	else
+	if (pSection->GetRequiredZen())
 	{
 		pPlayer->MoneyReduce(pSection->GetRequiredZen());
+	}
+
+	else
+	{
+		for (uint8 n = 0; n < MOSS_MERCHANT_REQUIRED_ITEM_MAX; ++n)
+		{
+			if (pSection->GetRequiredItemType(n) == uint16(-1))
+				continue;
+
+			for (uint8 i = 0; i < pSection->GetRequiredItemCount(n); ++i)
+			{
+				pPlayer->ItemFind(pSection->GetRequiredItemType(n), 0, true);
+			}
+		}
 	}
 
 	MOSS_MERCHANT_REWARD pMsg;
